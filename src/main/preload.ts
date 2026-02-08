@@ -38,6 +38,9 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.on(channel, (_event, ...args) => func(...args));
     }
   },
+  removeAllListeners: (channel: string) => {
+    ipcRenderer.removeAllListeners(channel);
+  },
   invoke: async (channel: string, data?: any) => {
     const validChannels = [
       'settings:get',
@@ -49,6 +52,8 @@ contextBridge.exposeInMainWorld('electron', {
       'stt:init',
       'keytar:save',
       'keytar:get',
+      'hotkey:update',
+      'hotkey:get',
       'update:check',
       'update:download',
       'update:install',
@@ -63,6 +68,7 @@ contextBridge.exposeInMainWorld('electron', {
 export interface IElectronAPI {
   send: (channel: string, data: any) => void;
   receive: (channel: string, func: (...args: any[]) => void) => void;
+  removeAllListeners: (channel: string) => void;
   invoke: (channel: string, data?: any) => Promise<any>;
 }
 

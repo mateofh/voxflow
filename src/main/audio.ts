@@ -26,7 +26,10 @@ export const initAudioHandlers = (mainWindow: BrowserWindow | null): void => {
   // Receive audio chunks from renderer
   ipcMain.on('audio:chunk', (_event, chunk: ArrayBuffer) => {
     if (isRecording) {
-      audioChunks.push(Buffer.from(chunk));
+      const buf = Buffer.from(chunk);
+      audioChunks.push(buf);
+      // Forward chunk for real-time STT streaming
+      audioEmitter.emit('chunk', buf);
     }
   });
 

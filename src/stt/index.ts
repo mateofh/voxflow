@@ -6,24 +6,42 @@ export const sttEmitter = new EventEmitter();
 
 let currentProvider: STTProvider | null = null;
 let currentProviderType: STTProviderType = DEFAULT_STT_CONFIG.provider;
+let storedApiKey: string | null = null;
 
 /**
- * Initialize the STT system with the specified provider
+ * Initialize the STT system (stores the key for later use)
  */
 export const initSTT = async (apiKey: string, providerType?: STTProviderType): Promise<void> => {
+  storedApiKey = apiKey;
+  currentProviderType = providerType || DEFAULT_STT_CONFIG.provider;
+
+  // Test connection to validate the key
+  await connectSTT();
+  // Close the test connection immediately
+  await disconnectSTT();
+
+  console.log(`✓ STT initialized with ${currentProviderType}`);
+};
+
+/**
+ * Open a fresh STT streaming connection (call at start of each recording)
+ */
+export const connectSTT = async (): Promise<void> => {
+  if (!storedApiKey) {
+    console.warn('STT: No API key stored. Call initSTT first.');
+    return;
+  }
+
   // Disconnect existing provider
   if (currentProvider?.isConnected()) {
     await currentProvider.disconnect();
   }
-
-  currentProviderType = providerType || DEFAULT_STT_CONFIG.provider;
 
   switch (currentProviderType) {
     case 'deepgram':
       currentProvider = new DeepgramProvider();
       break;
     case 'whisper':
-      // TODO: Implement whisper.cpp local provider
       console.warn('Whisper provider not yet implemented, falling back to Deepgram');
       currentProvider = new DeepgramProvider();
       break;
@@ -45,16 +63,14 @@ export const initSTT = async (apiKey: string, providerType?: STTProviderType): P
     sttEmitter.emit('error', error);
   });
 
-  await currentProvider.connect(apiKey);
-  console.log(`✓ STT initialized with ${currentProviderType}`);
+  await currentProvider.connect(storedApiKey);
 };
 
 /**
- * Send audio data to the STT provider for transcription
+ * Send audio data to the STT provider for transcription (real-time chunks)
  */
 export const sendAudioToSTT = (audioBuffer: Buffer): void => {
   if (!currentProvider?.isConnected()) {
-    console.warn('STT provider not connected');
     return;
   }
   currentProvider.sendAudio(audioBuffer);
@@ -66,8 +82,14 @@ export const sendAudioToSTT = (audioBuffer: Buffer): void => {
 export const disconnectSTT = async (): Promise<void> => {
   if (currentProvider?.isConnected()) {
     await currentProvider.disconnect();
-    console.log('✓ STT disconnected');
   }
+};
+
+/**
+ * Check if STT has a stored API key (is configured)
+ */
+export const isSTTConfigured = (): boolean => {
+  return storedApiKey !== null;
 };
 
 /**
@@ -77,6 +99,7 @@ export const getSTTInfo = () => ({
   provider: currentProviderType,
   connected: currentProvider?.isConnected() || false,
   name: currentProvider?.name || 'none',
+  configured: storedApiKey !== null,
 });
 
 export type { STTResult, STTProviderType } from './types';

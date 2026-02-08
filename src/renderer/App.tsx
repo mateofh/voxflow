@@ -4,12 +4,32 @@ import { useVAD } from './hooks/useVAD';
 import Settings from './pages/Settings';
 import Onboarding from './pages/Onboarding';
 
+const formatHotkeyDisplay = (hotkey: string): string => {
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
+  return hotkey
+    .replace('CommandOrControl', isMac ? 'Cmd' : 'Ctrl')
+    .replace('Command', 'Cmd')
+    .replace('Control', 'Ctrl');
+};
+
 const App: React.FC = () => {
   const [page, setPage] = useState<'home' | 'settings'>('home');
   const [isFirstRun, setIsFirstRun] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentHotkey, setCurrentHotkey] = useState('CommandOrControl+Shift+Space');
   const { isRecording, duration, error: recordingError } = useRecording();
   const { isListening, isSpeaking, startVAD, stopVAD, error: vadError } = useVAD();
+
+  // Load current hotkey
+  const loadHotkey = async () => {
+    if (!window.electron) return;
+    try {
+      const result = await window.electron.invoke('hotkey:get');
+      if (result?.hotkey) setCurrentHotkey(result.hotkey);
+    } catch (err) {
+      // Use default
+    }
+  };
 
   // Check if onboarding was already completed
   useEffect(() => {
@@ -29,6 +49,7 @@ const App: React.FC = () => {
         console.error('Failed to check onboarding status:', err);
       }
 
+      await loadHotkey();
       setIsLoading(false);
     };
 
@@ -61,7 +82,7 @@ const App: React.FC = () => {
   }
 
   if (page === 'settings') {
-    return <Settings onBack={() => setPage('home')} />;
+    return <Settings onBack={() => { loadHotkey(); setPage('home'); }} />;
   }
 
   const handleToggleVAD = async () => {
@@ -87,7 +108,7 @@ const App: React.FC = () => {
           <div className="mb-6 bg-destructive/10 border border-destructive/30 text-destructive-foreground px-5 py-4 rounded-lg animate-glow-pulse">
             <p className="font-poppins font-semibold text-lg">Recording...</p>
             <p className="text-3xl font-mono text-destructive">{duration.toFixed(1)}s</p>
-            <p className="text-sm text-muted-foreground mt-1">Press the hotkey again to stop</p>
+            <p className="text-sm text-muted-foreground mt-1">Presiona el hotkey de nuevo para detener</p>
           </div>
         )}
 
@@ -117,7 +138,7 @@ const App: React.FC = () => {
               Global Hotkey
             </p>
             <p className="text-lg font-mono text-primary">
-              Cmd + Shift + Space
+              {formatHotkeyDisplay(currentHotkey)}
             </p>
           </div>
 
@@ -165,7 +186,7 @@ const App: React.FC = () => {
 
         {!isRecording && !isListening && (
           <p className="mt-6 text-sm text-muted-foreground font-roboto">
-            Press the hotkey or enable VAD to start
+            Presiona el hotkey para empezar a dictar
           </p>
         )}
       </div>

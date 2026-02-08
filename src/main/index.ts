@@ -1,14 +1,23 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { createTray, updateTrayState } from './tray';
-import { registerHotkeys, hotkeyEmitter } from './hotkeys';
+import { registerHotkeys, hotkeyEmitter, updateHotkey, getCurrentHotkey } from './hotkeys';
 import { initAudioHandlers, startRecording, stopRecording } from './audio';
-import { initSTT, sendAudioToSTT, disconnectSTT, sttEmitter } from '../stt';
+import { initSTT, connectSTT, sendAudioToSTT, disconnectSTT, sttEmitter } from '../stt';
 import { insertTextViaClipboard } from './output';
 import { playStartSound, playStopSound, playCompleteSound } from './sounds';
 import { initLLM, enhanceText, setEnhancementEnabled } from '../llm';
 import { registerIPCHandlers } from './ipc-handlers';
 import { initAutoUpdater, downloadUpdate, installUpdate } from './updater';
+
+// Gracefully handle broken pipe errors (EPIPE) when stdout/stderr closes
+// This happens when running via concurrently and the parent process ends
+process.stdout?.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EPIPE') return;
+});
+process.stderr?.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EPIPE') return;
+});
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -19,7 +28,6 @@ let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
 
 const createWindow = (): void => {
-  // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -28,23 +36,23 @@ const createWindow = (): void => {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    // Hide window initially (tray-first approach)
-    show: false,
+    show: process.env.NODE_ENV === 'development',
   });
 
-  // Load the index.html of the app.
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173');
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
-  // Open DevTools in development
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
+  });
+
   if (process.env.NODE_ENV === 'development') {
     mainWindow.webContents.openDevTools();
   }
 
-  // Handle window close
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -53,7 +61,6 @@ const createWindow = (): void => {
   });
 };
 
-// This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   createWindow();
   createTray(mainWindow);
@@ -80,39 +87,44 @@ app.whenReady().then(() => {
     installUpdate();
   });
 
+  // Forward audio chunks to STT in real-time via audioEmitter
+  const { audioEmitter } = require('./audio');
+  audioEmitter.on('chunk', (chunk: Buffer) => {
+    sendAudioToSTT(chunk);
+  });
+
   // VAD event handlers
-  ipcMain.on('vad:speech-start', () => {
+  ipcMain.on('vad:speech-start', async () => {
     console.log('🗣️ VAD: Speech detected');
+    await connectSTT();
     startRecording();
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('recording:started');
     }
   });
 
-  ipcMain.on('vad:speech-end', (_event, audioBuffer: ArrayBuffer) => {
+  ipcMain.on('vad:speech-end', async (_event, audioBuffer: ArrayBuffer) => {
     console.log('🔇 VAD: Speech ended');
     stopRecording();
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('recording:stopped');
     }
-    // Send audioBuffer to STT for transcription
+    // Send final buffer and disconnect
     sendAudioToSTT(Buffer.from(audioBuffer));
+    await disconnectSTT();
   });
 
   // STT result handlers
   sttEmitter.on('result', (result: any) => {
+    console.log(`📝 STT result: "${result.text}" (final: ${result.isFinal})`);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('transcription:result', result);
-    }
-    if (result.isFinal) {
-      updateTrayState('idle');
     }
   });
 
   sttEmitter.on('final', async (result: any) => {
     if (result.text) {
       try {
-        // Enhance text with LLM if enabled
         const finalText = await enhanceText(result.text, {
           language: 'es',
         });
@@ -121,7 +133,6 @@ app.whenReady().then(() => {
         updateTrayState('idle');
       } catch (error) {
         console.error('Text processing failed:', error);
-        // Fallback: insert raw text if enhancement fails
         try {
           await insertTextViaClipboard(result.text);
           playCompleteSound();
@@ -137,7 +148,7 @@ app.whenReady().then(() => {
     console.error('STT error:', error.message);
   });
 
-  // IPC handler for STT initialization (called from Settings when user enters API key)
+  // IPC handler for STT initialization
   ipcMain.handle('stt:init', async (_event, apiKey: string) => {
     try {
       await initSTT(apiKey);
@@ -163,42 +174,78 @@ app.whenReady().then(() => {
     return { success: true };
   });
 
-  // Set up hotkey event listeners
-  hotkeyEmitter.on('recording:start', () => {
-    console.log('📝 Recording started event received');
-    playStartSound();
-    updateTrayState('recording');
-    startRecording();
+  // IPC handler for hotkey update
+  ipcMain.handle('hotkey:update', async (_event, newHotkey: string) => {
+    const success = updateHotkey(newHotkey, mainWindow);
+    return { success, currentHotkey: getCurrentHotkey() };
   });
 
-  hotkeyEmitter.on('recording:stop', () => {
-    console.log('📝 Recording stopped event received');
+  // IPC handler for getting current hotkey
+  ipcMain.handle('hotkey:get', async () => {
+    return { hotkey: getCurrentHotkey() };
+  });
+
+  // Hotkey: START recording
+  hotkeyEmitter.on('recording:start', async () => {
+    console.log('📝 Hotkey: Recording START');
+    playStartSound();
+    updateTrayState('recording');
+
+    // 1. Open fresh Deepgram connection
+    try {
+      await connectSTT();
+    } catch (err) {
+      console.error('Failed to connect STT:', err);
+    }
+
+    // 2. Start audio buffer collection in main
+    startRecording();
+
+    // 3. Tell renderer to open mic and stream chunks
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('recording:started');
+    }
+  });
+
+  // Hotkey: STOP recording
+  hotkeyEmitter.on('recording:stop', async () => {
+    console.log('📝 Hotkey: Recording STOP');
     playStopSound();
     updateTrayState('processing');
+
+    // 1. Tell renderer to stop mic capture
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('recording:stopped');
+    }
+
+    // 2. Stop audio buffer in main
     const result = stopRecording();
     if (result) {
-      console.log(`Audio captured: ${result.duration.toFixed(1)}s`);
-      // TODO: Send to STT (Week 2)
+      console.log(`Audio captured: ${result.duration.toFixed(1)}s, ${(result.buffer.length / 1024).toFixed(1)}KB`);
+    }
+
+    // 3. Close Deepgram connection (triggers final results)
+    await disconnectSTT();
+
+    if (!result || result.buffer.length === 0) {
+      console.warn('No audio data captured');
+      updateTrayState('idle');
     }
   });
 
   app.on('activate', () => {
-    // On OS X it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
 });
 
-// Quit when all windows are closed, except on macOS
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// Handle quit event
 app.on('before-quit', () => {
   isQuitting = true;
 });

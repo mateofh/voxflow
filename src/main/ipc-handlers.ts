@@ -6,6 +6,7 @@ let appSettings: Record<string, any> = {
   enhancementEnabled: true,
   customPrompt: '',
   language: 'es',
+  hotkey: '',  // Empty = use default (CommandOrControl+Shift+Space)
 };
 
 /**

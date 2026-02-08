@@ -4,6 +4,48 @@ interface SettingsProps {
   onBack: () => void;
 }
 
+// Convert Electron accelerator to display string
+const formatHotkeyDisplay = (hotkey: string): string => {
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
+  return hotkey
+    .replace('CommandOrControl', isMac ? 'Cmd' : 'Ctrl')
+    .replace('Command', 'Cmd')
+    .replace('Control', 'Ctrl');
+};
+
+// Convert a KeyboardEvent to Electron accelerator format
+const keyEventToAccelerator = (e: React.KeyboardEvent): string | null => {
+  const parts: string[] = [];
+
+  if (e.metaKey || e.ctrlKey) parts.push('CommandOrControl');
+  if (e.altKey) parts.push('Alt');
+  if (e.shiftKey) parts.push('Shift');
+
+  const key = e.key;
+  // Ignore if only modifiers are pressed
+  if (['Control', 'Meta', 'Alt', 'Shift'].includes(key)) return null;
+
+  // Need at least one modifier
+  if (parts.length === 0) return null;
+
+  // Map key names to Electron accelerator format
+  if (key === ' ') parts.push('Space');
+  else if (key === 'Enter') parts.push('Return');
+  else if (key === 'Escape') parts.push('Escape');
+  else if (key === 'Backspace') parts.push('Backspace');
+  else if (key === 'Delete') parts.push('Delete');
+  else if (key === 'Tab') parts.push('Tab');
+  else if (key === 'ArrowUp') parts.push('Up');
+  else if (key === 'ArrowDown') parts.push('Down');
+  else if (key === 'ArrowLeft') parts.push('Left');
+  else if (key === 'ArrowRight') parts.push('Right');
+  else if (key.startsWith('F') && key.length <= 3) parts.push(key); // F1-F12
+  else if (key.length === 1) parts.push(key.toUpperCase());
+  else return null;
+
+  return parts.join('+');
+};
+
 const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   const [deepgramKey, setDeepgramKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
@@ -12,6 +54,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   const [language, setLanguage] = useState('es');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [currentHotkey, setCurrentHotkey] = useState('CommandOrControl+Shift+Space');
+  const [recordingHotkey, setRecordingHotkey] = useState(false);
+  const [hotkeyStatus, setHotkeyStatus] = useState<string | null>(null);
 
   // Load saved settings on mount
   useEffect(() => {
@@ -28,6 +73,11 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         setEnhancementEnabled(settings.enhancementEnabled ?? true);
         setCustomPrompt(settings.customPrompt || '');
         setLanguage(settings.language || 'es');
+      }
+      // Load current hotkey from main process
+      const hotkeyResult = await window.electron.invoke('hotkey:get');
+      if (hotkeyResult?.hotkey) {
+        setCurrentHotkey(hotkeyResult.hotkey);
       }
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -75,6 +125,34 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     setSaving(false);
   };
 
+  const handleHotkeyKeyDown = async (e: React.KeyboardEvent) => {
+    if (!recordingHotkey) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const accelerator = keyEventToAccelerator(e);
+    if (!accelerator) return; // Only modifiers pressed, keep waiting
+
+    setRecordingHotkey(false);
+
+    if (!window.electron) return;
+
+    try {
+      const result = await window.electron.invoke('hotkey:update', accelerator);
+      if (result?.success) {
+        setCurrentHotkey(accelerator);
+        setHotkeyStatus('Hotkey actualizado');
+        setTimeout(() => setHotkeyStatus(null), 2000);
+      } else {
+        setHotkeyStatus('No se pudo registrar esa combinacion');
+        setTimeout(() => setHotkeyStatus(null), 3000);
+      }
+    } catch (err) {
+      setHotkeyStatus('Error al actualizar hotkey');
+      setTimeout(() => setHotkeyStatus(null), 3000);
+    }
+  };
+
   return (
     <div className="min-h-screen gradient-hero p-6">
       <div className="max-w-lg mx-auto animate-fade-in">
@@ -87,6 +165,43 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           >
             Back
           </button>
+        </div>
+
+        {/* Hotkey Section */}
+        <div className="gradient-card rounded-lg shadow-card border border-border p-6 mb-5">
+          <h2 className="text-lg font-poppins font-semibold text-card-foreground mb-4">Hotkey</h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            Manten presionado el hotkey para grabar, suelta para pegar el texto.
+          </p>
+
+          <div className="flex items-center gap-3">
+            <div
+              tabIndex={0}
+              onKeyDown={handleHotkeyKeyDown}
+              onBlur={() => setRecordingHotkey(false)}
+              onClick={() => setRecordingHotkey(true)}
+              className={`flex-1 px-4 py-3 rounded-lg border text-center font-mono text-sm cursor-pointer transition-smooth ${
+                recordingHotkey
+                  ? 'border-primary bg-primary/10 text-primary animate-pulse'
+                  : 'border-border bg-input text-foreground hover:border-primary/50'
+              }`}
+            >
+              {recordingHotkey
+                ? 'Presiona la nueva combinacion...'
+                : formatHotkeyDisplay(currentHotkey)
+              }
+            </div>
+          </div>
+
+          {hotkeyStatus && (
+            <p className={`mt-2 text-xs text-center font-medium animate-fade-in ${
+              hotkeyStatus.includes('Error') || hotkeyStatus.includes('No se pudo')
+                ? 'text-destructive'
+                : 'text-emerald-500'
+            }`}>
+              {hotkeyStatus}
+            </p>
+          )}
         </div>
 
         {/* API Keys Section */}
