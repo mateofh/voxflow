@@ -1,13 +1,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist/main",
-    "rootDir": "./src/main",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "module": "CommonJS",
     "moduleResolution": "node",
     "target": "ES2022",
     "lib": ["ES2022"]
   },
-  "include": ["src/main/**/*.ts"],
+  "include": ["src/main/**/*.ts", "src/stt/**/*.ts"],
   "exclude": ["node_modules", "dist", "src/renderer"]
 }

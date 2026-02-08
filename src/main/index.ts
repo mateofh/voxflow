@@ -3,6 +3,7 @@ import path from 'path';
 import { createTray } from './tray';
 import { registerHotkeys, hotkeyEmitter } from './hotkeys';
 import { initAudioHandlers, startRecording, stopRecording } from './audio';
+import { initSTT, sendAudioToSTT, disconnectSTT, sttEmitter } from '../stt';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -69,7 +70,29 @@ app.whenReady().then(() => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('recording:stopped');
     }
-    // TODO: Send audioBuffer to STT (Week 2)
+    // Send audioBuffer to STT for transcription
+    sendAudioToSTT(Buffer.from(audioBuffer));
+  });
+
+  // STT result handlers
+  sttEmitter.on('result', (result: any) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('transcription:result', result);
+    }
+  });
+
+  sttEmitter.on('error', (error: Error) => {
+    console.error('STT error:', error.message);
+  });
+
+  // IPC handler for STT initialization (called from Settings when user enters API key)
+  ipcMain.handle('stt:init', async (_event, apiKey: string) => {
+    try {
+      await initSTT(apiKey);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
   });
 
   // Set up hotkey event listeners

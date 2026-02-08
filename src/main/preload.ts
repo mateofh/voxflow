@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('electron', {
       'recording:stop',
       'audio:start',
       'audio:stop',
+      'stt:init',
     ];
     if (validChannels.includes(channel)) {
       return await ipcRenderer.invoke(channel, data);
