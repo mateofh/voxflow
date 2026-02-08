@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('electron', {
       'settings:get',
       'settings:set',
       'audio:chunk',
+      'vad:speech-start',
+      'vad:speech-end',
     ];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
@@ -23,6 +25,10 @@ contextBridge.exposeInMainWorld('electron', {
       'recording:stopped',
       'transcription:result',
       'settings:updated',
+      'vad:started',
+      'vad:stopped',
+      'vad:speech-detected',
+      'vad:speech-ended',
     ];
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (_event, ...args) => func(...args));

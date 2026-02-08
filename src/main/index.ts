@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { createTray } from './tray';
 import { registerHotkeys, hotkeyEmitter } from './hotkeys';
@@ -53,6 +53,24 @@ app.whenReady().then(() => {
   createTray(mainWindow);
   registerHotkeys(mainWindow);
   initAudioHandlers(mainWindow);
+
+  // VAD event handlers
+  ipcMain.on('vad:speech-start', () => {
+    console.log('🗣️ VAD: Speech detected');
+    startRecording();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('recording:started');
+    }
+  });
+
+  ipcMain.on('vad:speech-end', (_event, audioBuffer: ArrayBuffer) => {
+    console.log('🔇 VAD: Speech ended');
+    stopRecording();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('recording:stopped');
+    }
+    // TODO: Send audioBuffer to STT (Week 2)
+  });
 
   // Set up hotkey event listeners
   hotkeyEmitter.on('recording:start', () => {
