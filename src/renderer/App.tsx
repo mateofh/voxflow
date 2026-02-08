@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useRecording } from './hooks/useRecording';
 import { useVAD } from './hooks/useVAD';
+import Settings from './pages/Settings';
 
 const App: React.FC = () => {
+  const [page, setPage] = useState<'home' | 'settings'>('home');
   const { isRecording, duration, error: recordingError } = useRecording();
   const { isListening, isSpeaking, startVAD, stopVAD, error: vadError } = useVAD();
+
+  if (page === 'settings') {
+    return <Settings onBack={() => setPage('home')} />;
+  }
 
   const handleToggleVAD = async () => {
     if (isListening) {
@@ -77,7 +83,15 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          <div className="space-y-2 text-left text-sm text-gray-600">
+          {/* Settings Button */}
+          <button
+            onClick={() => setPage('settings')}
+            className="w-full py-2 px-4 rounded font-medium bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors"
+          >
+            Settings
+          </button>
+
+          <div className="mt-4 space-y-2 text-left text-sm text-gray-600">
             <p>System Tray initialized</p>
             <p>Global hotkeys active</p>
             <p>Audio capture ready</p>

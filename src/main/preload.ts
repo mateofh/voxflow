@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld('electron', {
       'audio:start',
       'audio:stop',
       'stt:init',
+      'keytar:save',
+      'keytar:get',
     ];
     if (validChannels.includes(channel)) {
       return await ipcRenderer.invoke(channel, data);

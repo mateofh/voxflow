@@ -6,6 +6,8 @@ import { initAudioHandlers, startRecording, stopRecording } from './audio';
 import { initSTT, sendAudioToSTT, disconnectSTT, sttEmitter } from '../stt';
 import { insertTextViaClipboard } from './output';
 import { playStartSound, playStopSound, playCompleteSound } from './sounds';
+import { initLLM, enhanceText, setEnhancementEnabled } from '../llm';
+import { registerIPCHandlers } from './ipc-handlers';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -56,6 +58,7 @@ app.whenReady().then(() => {
   createTray(mainWindow);
   registerHotkeys(mainWindow);
   initAudioHandlers(mainWindow);
+  registerIPCHandlers();
 
   // VAD event handlers
   ipcMain.on('vad:speech-start', () => {
@@ -89,10 +92,23 @@ app.whenReady().then(() => {
   sttEmitter.on('final', async (result: any) => {
     if (result.text) {
       try {
-        await insertTextViaClipboard(result.text);
+        // Enhance text with LLM if enabled
+        const finalText = await enhanceText(result.text, {
+          language: 'es',
+        });
+        await insertTextViaClipboard(finalText);
         playCompleteSound();
+        updateTrayState('idle');
       } catch (error) {
-        console.error('Text insertion failed:', error);
+        console.error('Text processing failed:', error);
+        // Fallback: insert raw text if enhancement fails
+        try {
+          await insertTextViaClipboard(result.text);
+          playCompleteSound();
+        } catch (insertError) {
+          console.error('Text insertion failed:', insertError);
+        }
+        updateTrayState('idle');
       }
     }
   });
@@ -109,6 +125,22 @@ app.whenReady().then(() => {
     } catch (error) {
       return { success: false, error: (error as Error).message };
     }
+  });
+
+  // IPC handler for LLM initialization
+  ipcMain.handle('llm:init', async (_event, apiKey: string) => {
+    try {
+      initLLM(apiKey);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
+  });
+
+  // IPC handler for enhancement toggle
+  ipcMain.handle('enhancement:toggle', async (_event, enabled: boolean) => {
+    setEnhancementEnabled(enabled);
+    return { success: true };
   });
 
   // Set up hotkey event listeners
