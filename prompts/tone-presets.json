@@ -1,0 +1,40 @@
+{
+  "presets": [
+    {
+      "id": "professional",
+      "name": "Profesional",
+      "description": "Tono formal pero accesible. Ideal para emails, propuestas y documentación.",
+      "instruction": "Usa un tono profesional y claro. Evita coloquialismos. Estructura las ideas de forma lógica. Usa vocabulario preciso sin ser pretencioso."
+    },
+    {
+      "id": "casual",
+      "name": "Casual",
+      "description": "Tono relajado y conversacional. Ideal para chats, mensajes y redes sociales.",
+      "instruction": "Mantén un tono relajado y conversacional. Puedes usar contracciones y lenguaje coloquial. Sé directo y breve. Como hablarías con un colega amigo."
+    },
+    {
+      "id": "technical",
+      "name": "Técnico",
+      "description": "Tono preciso y detallado. Ideal para documentación técnica y code reviews.",
+      "instruction": "Sé preciso y técnico. Usa terminología correcta del dominio. Estructura con claridad. Incluye detalles específicos. No simplifiques en exceso."
+    },
+    {
+      "id": "creative",
+      "name": "Creativo",
+      "description": "Tono expresivo y envolvente. Ideal para contenido, blogs y storytelling.",
+      "instruction": "Sé expresivo y envolvente. Usa metáforas cuando aporten. Varía la longitud de las oraciones. Engancha al lector. Mantén un ritmo dinámico."
+    },
+    {
+      "id": "concise",
+      "name": "Conciso",
+      "description": "Mínimas palabras, máximo impacto. Ideal para ejecutivos y decisiones rápidas.",
+      "instruction": "Sé extremadamente conciso. Cada palabra debe aportar. Elimina adjetivos innecesarios. Formato: bulletpoints cuando sea posible. Sin rodeos."
+    },
+    {
+      "id": "empathetic",
+      "name": "Empático",
+      "description": "Tono cálido y comprensivo. Ideal para soporte al cliente y feedback.",
+      "instruction": "Muestra comprensión y calidez. Reconoce la situación del otro. Ofrece ayuda de forma genuina. Evita ser condescendiente. Sé amable pero no exagerado."
+    }
+  ]
+}

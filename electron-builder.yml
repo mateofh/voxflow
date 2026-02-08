@@ -1,0 +1,57 @@
+appId: com.voxflow.app
+productName: VoxFlow
+copyright: Copyright © 2026 VoxFlow Contributors
+
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - dist/**/*
+  - assets/**/*
+  - prompts/**/*
+  - "!**/*.map"
+  - "!**/*.ts"
+
+mac:
+  category: public.app-category.productivity
+  icon: assets/icons/icon.icns
+  target:
+    - dmg
+    - zip
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: "VoxFlow needs microphone access to transcribe your voice."
+    NSAccessibilityUsageDescription: "VoxFlow needs accessibility access to insert text at your cursor position."
+
+win:
+  icon: assets/icons/icon.ico
+  target:
+    - nsis
+    - portable
+  requestedExecutionLevel: asInvoker
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+publish:
+  provider: github
+  releaseType: release
+
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
