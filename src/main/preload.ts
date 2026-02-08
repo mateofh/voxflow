@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electron', {
       'recording:stop',
       'settings:get',
       'settings:set',
+      'audio:chunk',
     ];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
@@ -33,6 +34,8 @@ contextBridge.exposeInMainWorld('electron', {
       'settings:set',
       'recording:start',
       'recording:stop',
+      'audio:start',
+      'audio:stop',
     ];
     if (validChannels.includes(channel)) {
       return await ipcRenderer.invoke(channel, data);

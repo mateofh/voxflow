@@ -1,26 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useRecording } from './hooks/useRecording';
 
 const App: React.FC = () => {
-  const [isRecording, setIsRecording] = useState(false);
-
-  useEffect(() => {
-    // Listen for recording events from main process
-    if (window.electron) {
-      window.electron.receive('recording:started', () => {
-        setIsRecording(true);
-      });
-
-      window.electron.receive('recording:stopped', () => {
-        setIsRecording(false);
-      });
-    }
-  }, []);
+  const { isRecording, duration, error } = useRecording();
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          🎤 VoxFlow
+          VoxFlow
         </h1>
         <p className="text-lg text-gray-600 mb-8">
           Voice to Text Desktop App
@@ -29,8 +17,17 @@ const App: React.FC = () => {
         {/* Recording indicator */}
         {isRecording && (
           <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg animate-pulse">
-            <p className="font-bold">🔴 Recording...</p>
+            <p className="font-bold">Recording...</p>
+            <p className="text-2xl font-mono">{duration.toFixed(1)}s</p>
             <p className="text-sm">Press the hotkey again to stop</p>
+          </div>
+        )}
+
+        {/* Error display */}
+        {error && (
+          <div className="mb-6 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg">
+            <p className="font-bold">Microphone Error</p>
+            <p className="text-sm">{error}</p>
           </div>
         )}
 
@@ -44,17 +41,15 @@ const App: React.FC = () => {
               Global Hotkey:
             </p>
             <p className="text-lg font-mono text-blue-700">
-              {process.platform === 'darwin'
-                ? 'Cmd + Shift + Space'
-                : 'Ctrl + Shift + Space'}
+              Cmd + Shift + Space
             </p>
           </div>
 
           <div className="space-y-2 text-left text-sm text-gray-600">
-            <p>✅ System Tray initialized</p>
-            <p>✅ Global hotkeys active</p>
-            <p>⏳ Audio capture - Coming soon</p>
-            <p>⏳ VAD - Coming soon</p>
+            <p>System Tray initialized</p>
+            <p>Global hotkeys active</p>
+            <p>Audio capture ready</p>
+            <p>VAD - Coming soon</p>
           </div>
         </div>
 
