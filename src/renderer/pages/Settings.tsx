@@ -76,28 +76,28 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-screen gradient-hero p-6">
+      <div className="max-w-lg mx-auto animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-poppins font-bold gradient-text">Settings</h1>
           <button
             onClick={onBack}
-            className="text-sm text-blue-600 hover:text-blue-800"
+            className="text-sm font-medium text-primary-glow hover:text-primary transition-smooth"
           >
             Back
           </button>
         </div>
 
         {/* API Keys Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">API Keys</h2>
-          <p className="text-xs text-gray-500 mb-4">
+        <div className="gradient-card rounded-lg shadow-card border border-border p-6 mb-5">
+          <h2 className="text-lg font-poppins font-semibold text-card-foreground mb-4">API Keys</h2>
+          <p className="text-xs text-muted-foreground mb-4">
             Keys are stored securely in your system keychain.
           </p>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-card-foreground mb-2">
               Deepgram API Key (Required for STT)
             </label>
             <input
@@ -105,11 +105,11 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               value={deepgramKey}
               onChange={(e) => setDeepgramKey(e.target.value)}
               placeholder="Enter your Deepgram API key"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-4 py-2.5 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm placeholder:text-muted-foreground"
             />
             <a
               href="https://console.deepgram.com"
-              className="text-xs text-blue-500 hover:underline mt-1 inline-block"
+              className="text-xs text-primary-glow hover:text-primary mt-1.5 inline-block transition-smooth"
               target="_blank"
             >
               Get a Deepgram API key
@@ -117,7 +117,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           </div>
 
           <div className="mb-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-card-foreground mb-2">
               OpenAI API Key (Optional - for text enhancement)
             </label>
             <input
@@ -125,11 +125,11 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               value={openaiKey}
               onChange={(e) => setOpenaiKey(e.target.value)}
               placeholder="Enter your OpenAI API key"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-4 py-2.5 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm placeholder:text-muted-foreground"
             />
             <a
               href="https://platform.openai.com/api-keys"
-              className="text-xs text-blue-500 hover:underline mt-1 inline-block"
+              className="text-xs text-primary-glow hover:text-primary mt-1.5 inline-block transition-smooth"
               target="_blank"
             >
               Get an OpenAI API key
@@ -138,24 +138,24 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         </div>
 
         {/* Enhancement Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Text Enhancement</h2>
+        <div className="gradient-card rounded-lg shadow-card border border-border p-6 mb-5">
+          <h2 className="text-lg font-poppins font-semibold text-card-foreground mb-4">Text Enhancement</h2>
 
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-gray-700">Enable Enhancement</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-medium text-card-foreground">Enable Enhancement</p>
+              <p className="text-xs text-muted-foreground">
                 Uses AI to improve grammar and clarity
               </p>
             </div>
             <button
               onClick={() => setEnhancementEnabled(!enhancementEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                enhancementEnabled ? 'bg-blue-600' : 'bg-gray-300'
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-smooth ${
+                enhancementEnabled ? 'bg-primary glow-subtle' : 'bg-secondary'
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-smooth ${
                   enhancementEnabled ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
@@ -163,8 +163,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           </div>
 
           {enhancementEnabled && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="animate-fade-in">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Custom Prompt (Optional)
               </label>
               <textarea
@@ -172,9 +172,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder="Add custom instructions for text enhancement..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-4 py-2.5 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm placeholder:text-muted-foreground resize-none"
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-muted-foreground mt-1.5">
                 Leave empty to use default enhancement prompt
               </p>
             </div>
@@ -182,12 +182,12 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         </div>
 
         {/* Language Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Language</h2>
+        <div className="gradient-card rounded-lg shadow-card border border-border p-6 mb-5">
+          <h2 className="text-lg font-poppins font-semibold text-card-foreground mb-4">Language</h2>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            className="w-full px-4 py-2.5 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
           >
             <option value="es">Spanish</option>
             <option value="en">English</option>
@@ -202,17 +202,17 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         <button
           onClick={saveSettings}
           disabled={saving}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+          className="w-full py-3 gradient-primary hover:opacity-90 disabled:opacity-50 text-primary-foreground font-poppins font-medium rounded-lg transition-smooth shadow-glow"
         >
           {saving ? 'Saving...' : 'Save Settings'}
         </button>
 
         {/* Status Message */}
         {status && (
-          <p className={`mt-3 text-sm text-center ${
+          <p className={`mt-4 text-sm text-center font-medium animate-fade-in ${
             status.includes('Error') || status.includes('failed')
-              ? 'text-red-600'
-              : 'text-green-600'
+              ? 'text-destructive'
+              : 'text-emerald-500'
           }`}>
             {status}
           </p>

@@ -21,50 +21,50 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+    <div className="min-h-screen gradient-hero flex items-center justify-center p-6">
+      <div className="text-center animate-fade-in">
+        <h1 className="text-5xl font-poppins font-bold gradient-text mb-2">
           VoxFlow
         </h1>
-        <p className="text-lg text-gray-600 mb-8">
+        <p className="text-base text-muted-foreground mb-8 font-roboto">
           Voice to Text Desktop App
         </p>
 
         {/* Recording indicator */}
         {isRecording && (
-          <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg animate-pulse">
-            <p className="font-bold">Recording...</p>
-            <p className="text-2xl font-mono">{duration.toFixed(1)}s</p>
-            <p className="text-sm">Press the hotkey again to stop</p>
+          <div className="mb-6 bg-destructive/10 border border-destructive/30 text-destructive-foreground px-5 py-4 rounded-lg animate-glow-pulse">
+            <p className="font-poppins font-semibold text-lg">Recording...</p>
+            <p className="text-3xl font-mono text-destructive">{duration.toFixed(1)}s</p>
+            <p className="text-sm text-muted-foreground mt-1">Press the hotkey again to stop</p>
           </div>
         )}
 
         {/* Speaking indicator (VAD) */}
         {isSpeaking && !isRecording && (
-          <div className="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg animate-pulse">
-            <p className="font-bold">Listening...</p>
-            <p className="text-sm">Speaking detected - recording automatically</p>
+          <div className="mb-6 bg-emerald-500/10 border border-emerald-500/30 px-5 py-4 rounded-lg animate-pulse">
+            <p className="font-poppins font-semibold text-lg text-emerald-500">Listening...</p>
+            <p className="text-sm text-muted-foreground">Speaking detected - recording automatically</p>
           </div>
         )}
 
         {/* Error display */}
         {(recordingError || vadError) && (
-          <div className="mb-6 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg">
-            <p className="font-bold">Error</p>
-            <p className="text-sm">{recordingError || vadError}</p>
+          <div className="mb-6 bg-destructive/10 border border-destructive/20 px-5 py-4 rounded-lg">
+            <p className="font-poppins font-semibold text-destructive">Error</p>
+            <p className="text-sm text-muted-foreground">{recordingError || vadError}</p>
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-lg shadow-md max-w-md">
-          <p className="text-gray-700 mb-4">
+        <div className="gradient-card shadow-card rounded-lg p-6 max-w-md border border-border">
+          <p className="text-card-foreground mb-5 font-roboto">
             System tray is active! Look for the VoxFlow icon in your menu bar.
           </p>
 
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
-            <p className="text-sm font-semibold text-blue-900 mb-1">
-              Global Hotkey:
+          <div className="mb-5 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm font-poppins font-semibold text-primary-glow mb-1">
+              Global Hotkey
             </p>
-            <p className="text-lg font-mono text-blue-700">
+            <p className="text-lg font-mono text-primary">
               Cmd + Shift + Space
             </p>
           </div>
@@ -73,10 +73,10 @@ const App: React.FC = () => {
           <div className="mb-4">
             <button
               onClick={handleToggleVAD}
-              className={`w-full py-2 px-4 rounded font-medium transition-colors ${
+              className={`w-full py-3 px-4 rounded-lg font-poppins font-medium transition-smooth ${
                 isListening
-                  ? 'bg-red-500 hover:bg-red-600 text-white'
-                  : 'bg-green-500 hover:bg-green-600 text-white'
+                  ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground glow-primary'
+                  : 'bg-emerald-500 hover:bg-emerald-500/90 text-white'
               }`}
             >
               {isListening ? 'Stop VAD' : 'Start VAD (Auto-detect speech)'}
@@ -86,21 +86,33 @@ const App: React.FC = () => {
           {/* Settings Button */}
           <button
             onClick={() => setPage('settings')}
-            className="w-full py-2 px-4 rounded font-medium bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors"
+            className="w-full py-3 px-4 rounded-lg font-poppins font-medium bg-secondary hover:bg-accent text-secondary-foreground transition-smooth"
           >
             Settings
           </button>
 
-          <div className="mt-4 space-y-2 text-left text-sm text-gray-600">
-            <p>System Tray initialized</p>
-            <p>Global hotkeys active</p>
-            <p>Audio capture ready</p>
-            <p>{isListening ? 'VAD active - auto-detecting speech' : 'VAD ready'}</p>
+          <div className="mt-5 space-y-2 text-left text-sm text-muted-foreground font-roboto">
+            <p className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+              System Tray initialized
+            </p>
+            <p className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+              Global hotkeys active
+            </p>
+            <p className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+              Audio capture ready
+            </p>
+            <p className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full inline-block ${isListening ? 'bg-turquoise-blue-400 animate-pulse' : 'bg-muted-foreground'}`}></span>
+              {isListening ? 'VAD active - auto-detecting speech' : 'VAD ready'}
+            </p>
           </div>
         </div>
 
         {!isRecording && !isListening && (
-          <p className="mt-6 text-sm text-gray-500">
+          <p className="mt-6 text-sm text-muted-foreground font-roboto">
             Press the hotkey or enable VAD to start
           </p>
         )}
