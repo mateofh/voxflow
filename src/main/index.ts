@@ -1,9 +1,11 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
-import { createTray } from './tray';
+import { createTray, updateTrayState } from './tray';
 import { registerHotkeys, hotkeyEmitter } from './hotkeys';
 import { initAudioHandlers, startRecording, stopRecording } from './audio';
 import { initSTT, sendAudioToSTT, disconnectSTT, sttEmitter } from '../stt';
+import { insertTextViaClipboard } from './output';
+import { playStartSound, playStopSound, playCompleteSound } from './sounds';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -79,6 +81,20 @@ app.whenReady().then(() => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('transcription:result', result);
     }
+    if (result.isFinal) {
+      updateTrayState('idle');
+    }
+  });
+
+  sttEmitter.on('final', async (result: any) => {
+    if (result.text) {
+      try {
+        await insertTextViaClipboard(result.text);
+        playCompleteSound();
+      } catch (error) {
+        console.error('Text insertion failed:', error);
+      }
+    }
   });
 
   sttEmitter.on('error', (error: Error) => {
@@ -98,11 +114,15 @@ app.whenReady().then(() => {
   // Set up hotkey event listeners
   hotkeyEmitter.on('recording:start', () => {
     console.log('📝 Recording started event received');
+    playStartSound();
+    updateTrayState('recording');
     startRecording();
   });
 
   hotkeyEmitter.on('recording:stop', () => {
     console.log('📝 Recording stopped event received');
+    playStopSound();
+    updateTrayState('processing');
     const result = stopRecording();
     if (result) {
       console.log(`Audio captured: ${result.duration.toFixed(1)}s`);
