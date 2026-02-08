@@ -1,12 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRecording } from './hooks/useRecording';
 import { useVAD } from './hooks/useVAD';
 import Settings from './pages/Settings';
+import Onboarding from './pages/Onboarding';
 
 const App: React.FC = () => {
   const [page, setPage] = useState<'home' | 'settings'>('home');
+  const [isFirstRun, setIsFirstRun] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const { isRecording, duration, error: recordingError } = useRecording();
   const { isListening, isSpeaking, startVAD, stopVAD, error: vadError } = useVAD();
+
+  // Check if onboarding was already completed
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (!window.electron) {
+        setIsFirstRun(false);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const settings = await window.electron.invoke('settings:get');
+        if (settings?.onboardingCompleted) {
+          setIsFirstRun(false);
+        }
+      } catch (err) {
+        console.error('Failed to check onboarding status:', err);
+      }
+
+      setIsLoading(false);
+    };
+
+    checkOnboarding();
+  }, []);
+
+  const handleOnboardingComplete = async () => {
+    if (window.electron) {
+      try {
+        await window.electron.invoke('settings:set', { onboardingCompleted: true });
+      } catch (err) {
+        console.error('Failed to save onboarding status:', err);
+      }
+    }
+    setIsFirstRun(false);
+  };
+
+  // Show nothing while checking onboarding status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <p className="text-muted-foreground font-roboto text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  // Show onboarding wizard for first-run experience
+  if (isFirstRun) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   if (page === 'settings') {
     return <Settings onBack={() => setPage('home')} />;

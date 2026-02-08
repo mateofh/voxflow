@@ -29,6 +29,10 @@ contextBridge.exposeInMainWorld('electron', {
       'vad:stopped',
       'vad:speech-detected',
       'vad:speech-ended',
+      'update:available',
+      'update:progress',
+      'update:downloaded',
+      'update:error',
     ];
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (_event, ...args) => func(...args));
@@ -45,6 +49,9 @@ contextBridge.exposeInMainWorld('electron', {
       'stt:init',
       'keytar:save',
       'keytar:get',
+      'update:check',
+      'update:download',
+      'update:install',
     ];
     if (validChannels.includes(channel)) {
       return await ipcRenderer.invoke(channel, data);

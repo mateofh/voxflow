@@ -2,16 +2,22 @@ appId: com.voxflow.app
 productName: VoxFlow
 copyright: Copyright © 2026 VoxFlow Contributors
 
+asar: true
+
 directories:
-  output: release
+  output: "release/${version}"
   buildResources: assets
 
 files:
-  - dist/**/*
-  - assets/**/*
-  - prompts/**/*
+  - dist/**
+  - src/renderer/**
+  - node_modules/**
+  - package.json
   - "!**/*.map"
   - "!**/*.ts"
+
+extraMetadata:
+  main: dist/main/index.js
 
 mac:
   category: public.app-category.productivity
@@ -37,8 +43,16 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Utility
+  icon: assets/icons
 
 dmg:
   contents:
@@ -51,6 +65,8 @@ dmg:
 
 publish:
   provider: github
+  owner: mateofh
+  repo: voxflow
   releaseType: release
 
 electronDownload:

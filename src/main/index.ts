@@ -8,6 +8,7 @@ import { insertTextViaClipboard } from './output';
 import { playStartSound, playStopSound, playCompleteSound } from './sounds';
 import { initLLM, enhanceText, setEnhancementEnabled } from '../llm';
 import { registerIPCHandlers } from './ipc-handlers';
+import { initAutoUpdater, downloadUpdate, installUpdate } from './updater';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -59,6 +60,25 @@ app.whenReady().then(() => {
   registerHotkeys(mainWindow);
   initAudioHandlers(mainWindow);
   registerIPCHandlers();
+
+  // Auto-updater (production only)
+  if (process.env.NODE_ENV !== 'development' && mainWindow) {
+    initAutoUpdater(mainWindow);
+  }
+
+  // Update IPC handlers
+  ipcMain.handle('update:check', async () => {
+    const { autoUpdater } = await import('electron-updater');
+    return autoUpdater.checkForUpdates();
+  });
+
+  ipcMain.handle('update:download', async () => {
+    downloadUpdate();
+  });
+
+  ipcMain.handle('update:install', () => {
+    installUpdate();
+  });
 
   // VAD event handlers
   ipcMain.on('vad:speech-start', () => {
